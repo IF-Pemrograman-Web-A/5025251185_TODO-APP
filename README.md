@@ -34,5 +34,8 @@ Website ini dibuat menggunakan HTML dan CSS. Dalam pembuatannya, saya menggunaka
 7. **External CSS**
    Menggunakan file style.css terpisah untuk mengatur tampilan website.
 
-   Tampilan Dekstop
+
+##Tampilan Dekstop
 <img width="959" height="543" alt="image" src="https://github.com/user-attachments/assets/1f4f3489-d29d-454b-b7c8-eab76b61aea2" />
+
+Tampilan Mobile
