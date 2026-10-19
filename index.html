@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Aplikasi Todo App interaktif dengan IndexedDB, Media Capture API, Service Worker, dan Standar Aksesibilitas WCAG 2.1 AA.">
+
+    <title>Todo App - [E03] The Lost Cavern</title>
+
+    <!-- Font Awesome Icon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- Skip Link untuk Aksesibilitas Keyboard (WCAG Best Practice) -->
+    <a href="#main-content" class="skip-link">Lewati ke konten utama</a>
+
+    <!-- Live Region untuk Pengumuman Screen Reader (A11y) -->
+    <div id="sr-announcements" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- ================= HEADER ================= -->
+    <header class="header" role="banner">
+        <div class="header-content">
+            <div class="header-text">
+                <h1>TODO LIST</h1>
+                <p class="subtitle">Kelola tugas kuliah dengan teratur dan efisien</p>
+            </div>
+
+            <!-- Tombol Toggle Light/Dark Mode (Kriteria 1 & 5) -->
+            <button 
+                type="button" 
+                id="theme-toggle" 
+                class="theme-toggle-btn" 
+                aria-label="Ganti ke mode gelap" 
+                aria-pressed="false"
+            >
+                <i class="fa-solid fa-moon" aria-hidden="true"></i> 
+                <span>Mode Gelap</span>
+            </button>
+        </div>
+    </header>
+
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main id="main-content" class="main-container" role="main">
+
+        <!-- ========== PANEL KIRI: DAFTAR TUGAS ========== -->
+        <section class="todo-panel" aria-labelledby="todo-list-title">
+
+            <div class="panel-header">
+                <h2 id="todo-list-title">Daftar Tugas</h2>
+
+                <span class="todo-count" id="todo-count" aria-live="polite" aria-atomic="true">
+                    0 Tasks
+                </span>
+            </div>
+
+            <!-- Container Todo Items (Dimanipulasi via IndexedDB & DOM) -->
+            <div class="todo-list" id="todo-list" role="list" aria-label="Daftar kartu tugas mata kuliah">
+                <!-- Todo items dirender secara dinamis oleh script.js -->
+            </div>
+
+        </section>
+
+
+        <!-- ========== PANEL KANAN: FORM INPUT & EDIT ========== -->
+        <aside class="editor-panel" aria-labelledby="form-title">
+
+            <div class="form-section">
+
+                <h2 id="form-title">Tambah Tugas Baru</h2>
+
+                <form class="todo-form" id="todo-form" novalidate>
+
+                    <!-- Judul Tugas -->
+                    <div class="form-group">
+                        <label for="title">
+                            Nama Matkul <span class="required" aria-hidden="true">*</span>
+                            <span class="sr-only">(wajib diisi)</span>
+                        </label>
+
+                        <input
+                            type="text"
+                            id="title"
+                            name="title"
+                            placeholder="Masukkan nama matkul (cth: PBO)"
+                            required
+                            aria-required="true"
+                            aria-describedby="title-hint"
+                        >
+                        <small id="title-hint" class="form-hint">Masukkan kode atau nama mata kuliah.</small>
+                    </div>
+
+                    <!-- Deskripsi Tugas -->
+                    <div class="form-group">
+                        <label for="description">
+                            Deskripsi
+                        </label>
+
+                        <textarea
+                            id="description"
+                            name="description"
+                            placeholder="Masukkan deskripsi tugas"
+                            rows="3"
+                            aria-describedby="desc-hint"
+                        ></textarea>
+                        <small id="desc-hint" class="form-hint">Rincian pekerjaan, link referensi, atau catatan.</small>
+                    </div>
+
+                    <!-- Media Capture API: Unggah Berkas & Kamera Live (Kriteria 2) -->
+                    <div class="form-group media-capture-group">
+                        <label id="media-label">
+                            Lampiran Foto Tugas (Media Capture)
+                        </label>
+
+                        <div class="media-actions" role="group" aria-labelledby="media-label">
+                            <label for="image-upload" class="btn-media btn-file" tabindex="0" role="button" aria-label="Unggah foto tugas dari file perangkat">
+                                <i class="fa-solid fa-file-arrow-up" aria-hidden="true"></i>
+                                <span>Pilih Berkas</span>
+                            </label>
+                            <input 
+                                type="file" 
+                                id="image-upload" 
+                                name="image" 
+                                accept="image/*" 
+                                capture="environment" 
+                                class="sr-only"
+                                aria-label="Pilih berkas gambar foto tugas"
+                            >
+
+                            <button 
+                                type="button" 
+                                id="btn-open-camera" 
+                                class="btn-media btn-camera" 
+                                aria-label="Buka kamera perangkat untuk mengambil foto tugas"
+                            >
+                                <i class="fa-solid fa-camera" aria-hidden="true"></i>
+                                <span>Buka Kamera</span>
+                            </button>
+                        </div>
+
+                        <!-- Preview Gambar Terpilih -->
+                        <div id="image-preview-container" class="image-preview-container" style="display: none;">
+                            <img id="image-preview" src="" alt="Pratinjau foto tugas yang dilampirkan" class="image-preview">
+                            <button 
+                                type="button" 
+                                id="btn-remove-image" 
+                                class="btn-remove-image" 
+                                aria-label="Hapus foto lampiran yang dipilih"
+                            >
+                                <i class="fa-solid fa-trash-can" aria-hidden="true"></i> Hapus Foto
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Waktu Pengingat Notifikasi (Kriteria 3) -->
+                    <div class="form-group">
+                        <label for="notification-time">
+                            Waktu Pengingat (Notifikasi)
+                        </label>
+
+                        <input
+                            type="datetime-local"
+                            id="notification-time"
+                            name="notificationTime"
+                            aria-describedby="notif-hint"
+                        >
+                        <small id="notif-hint" class="form-hint">Pilih tanggal dan jam agar browser memberi notifikasi pengingat.</small>
+                    </div>
+
+                    <!-- Tombol Aksi Form -->
+                    <div class="form-actions">
+                        <button type="submit" id="btn-submit" class="btn-submit" aria-label="Simpan dan tambahkan tugas baru ke daftar">
+                            Tambah Tugas
+                        </button>
+
+                        <button type="button" id="btn-cancel" class="btn-cancel" style="display: none;" aria-label="Batalkan proses edit tugas">
+                            Batal
+                        </button>
+                    </div>
+
+                </form>
+
+            </div>
+
+        </aside>
+
+    </main>
+
+
+    <!-- ================= CAMERA MODAL DIALOG (A11y) ================= -->
+    <div 
+        id="camera-modal" 
+        class="modal-backdrop" 
+        role="dialog" 
+        aria-modal="true" 
+        aria-labelledby="camera-modal-title" 
+        style="display: none;"
+    >
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h3 id="camera-modal-title">Ambil Foto dengan Kamera</h3>
+                <button type="button" id="btn-close-camera" class="btn-close-modal" aria-label="Tutup jendela kamera">
+                    <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+            </div>
+
+            <div class="modal-body">
+                <video id="camera-stream" autoplay playsinline aria-label="Tampilan langsung video kamera"></video>
+                <canvas id="camera-canvas" class="sr-only"></canvas>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" id="btn-capture-photo" class="btn-capture" aria-label="Jepret foto dari kamera">
+                    <i class="fa-solid fa-camera" aria-hidden="true"></i> Ambil Foto
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="footer" role="contentinfo">
+
+        <p>
+            &copy; 2026 Todo App - [E03] The Lost Cavern
+        </p>
+
+        <p>
+            Teknik Informatika | Institut Teknologi Sepuluh Nopember
+        </p>
+
+    </footer>
+
+    <!-- External JavaScript -->
+    <script src="script.js"></script>
+
+</body>
+</html>
